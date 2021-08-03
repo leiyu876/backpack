@@ -17,7 +17,7 @@ class CreateDealsTable extends Migration
             $table->id();
             $table->date('submission_date');
             $table->foreignId('account_id')->constrained(); // Account
-            $table->string('deal_name');
+            $table->string('deal_name')->nullable();
             $table->foreignId('iso_id')->constrained(); // ISO
             $table->string('sales_stage');
             $table->timestamps();

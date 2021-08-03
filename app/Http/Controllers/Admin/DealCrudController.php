@@ -3,9 +3,12 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Requests\DealRequest;
+use App\Models\Account;
+use App\Models\Deal;
 use App\Models\Iso;
 use Backpack\CRUD\app\Http\Controllers\CrudController;
 use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Class DealCrudController
@@ -15,8 +18,8 @@ use Backpack\CRUD\app\Library\CrudPanel\CrudPanelFacade as CRUD;
 class DealCrudController extends CrudController
 {
     use \Backpack\CRUD\app\Http\Controllers\Operations\ListOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation;
-    use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation;
+    use \Backpack\CRUD\app\Http\Controllers\Operations\CreateOperation { store as traitStore; }
+    use \Backpack\CRUD\app\Http\Controllers\Operations\UpdateOperation { update as traitUpdate; }
     use \Backpack\CRUD\app\Http\Controllers\Operations\DeleteOperation;
     use \Backpack\CRUD\app\Http\Controllers\Operations\ShowOperation;
 
@@ -164,6 +167,29 @@ class DealCrudController extends CrudController
             'allows_null' => false,
             'default'     => 'new',
         ]);
+
+        $this->crud->removeFields(['deal_name']);
+    }
+
+    public function store()
+    {
+        $this->crud->addField(['type' => 'hidden', 'name' => 'deal_name']);
+
+        $response = $this->traitStore();
+        
+        // do something after save
+        if($response->getStatusCode() === 302) {
+            
+            // auto generate “Account name + x”
+            $account = Account::find(request('account_id'));
+            $deal_name = $account->business_name.' '.($account->deal_indicator + 1);
+
+            $deal = Deal::find($this->data['entry']->id);
+            $deal->update(['deal_name' => $deal_name]);
+            $account->increment('deal_indicator');
+        }
+
+        return $response;
     }
 
     /**
@@ -175,5 +201,41 @@ class DealCrudController extends CrudController
     protected function setupUpdateOperation()
     {
         $this->setupCreateOperation();
+    }
+
+    public function update()
+    {
+        $deal_previous = Deal::find(request('id'));
+
+        $response = $this->traitUpdate();
+        
+        // do something after save
+        if($response->getStatusCode() === 302) {
+            if($deal_previous->account_id != request('account_id')) {
+                // auto generate “Account name + x”
+                $account = Account::find(request('account_id'));
+                $deal_name = $account->business_name.' '.($account->deal_indicator + 1);
+
+                $deal = Deal::find($this->data['entry']->id);
+                $deal->update(['deal_name' => $deal_name]);
+                $account->increment('deal_indicator');
+            }
+        }
+
+        return $response;
+    }
+
+    protected function setupShowOperation()
+    {
+        CRUD::setFromDb();
+
+        $this->crud->modifyColumn('account_id', [
+            'label' => "Account", // Table column heading
+            'type' => "select",
+            'name' => 'account_id', // the column that contains the ID of that connected entity;
+            'entity' => 'account', // the method that defines the relationship in your Model
+            'attribute' => "business_name", // foreign key attribute that is shown to user
+            'model' => 'App\Models\Account' // foreign key model
+        ]);
     }
 }

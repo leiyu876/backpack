@@ -46,6 +46,21 @@ class IsoCrudController extends CrudController
          * - CRUD::column('price')->type('number');
          * - CRUD::addColumn(['name' => 'price', 'type' => 'number']); 
          */
+
+        $this->crud->modifyColumn('emails', [
+            'name'  => 'emails',
+            'type'     => 'closure',
+            'function' => function($iso) {
+                $emails = json_decode($iso->emails);
+                
+                $v = '';
+                foreach ($emails as $item) {
+                    $v = $v.'<p>'.$item->email.'</p>';
+                }
+
+                return $v;
+            }
+        ]);
     }
 
     /**
@@ -65,6 +80,26 @@ class IsoCrudController extends CrudController
          * - CRUD::field('price')->type('number');
          * - CRUD::addField(['name' => 'price', 'type' => 'number'])); 
          */
+
+        $this->crud->modifyField('emails', [
+            'name'  => 'emails',
+            'label' => 'Emails',
+            'type'  => 'repeatable',
+            'fields' => [
+                [
+                    'name'    => 'email',
+                    'type'    => 'text',
+                    'label'   => 'Email',
+                    'wrapper' => ['class' => 'form-group col-md-4'],
+                ],
+            ],
+
+            // optional
+            'new_item_label'  => 'Add Email', // customize the text of the button
+            'init_rows' => 1, // number of empty rows to be initialized, by default 1
+            'min_rows' => 1, // minimum rows allowed, when reached the "delete" buttons will be hidden
+            // 'max_rows' => 2, // maximum rows allowed, when reached the "new item" button will be hidden
+        ]);
     }
 
     /**
@@ -76,5 +111,20 @@ class IsoCrudController extends CrudController
     protected function setupUpdateOperation()
     {
         $this->setupCreateOperation();
+    }
+
+    protected function setupShowOperation()
+    {
+        CRUD::setFromDb();
+
+        $this->crud->modifyColumn('emails', [
+            'name'  => 'emails',
+            'type'     => 'closure',
+            'function' => function($iso) {
+                $emails = json_decode($iso->emails);
+                $emails_array = collect($emails)->pluck('email')->toArray();
+                return implode(', ', $emails_array);
+            }
+        ]);
     }
 }

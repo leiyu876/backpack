@@ -25,7 +25,11 @@ class IsoFactory extends Factory
             'business_name' => $this->faker->company(),
             'contact_name' => $this->faker->name(),
             'contact_number' => $this->faker->phoneNumber(),
-            'emails' => json_encode([$this->faker->safeEmail()]),
+            'emails' => json_encode([
+                [
+                    'email' => $this->faker->safeEmail()
+                ]
+            ]),
         ];
     }
 }

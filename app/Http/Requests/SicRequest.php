@@ -26,7 +26,8 @@ class SicRequest extends FormRequest
     public function rules()
     {
         return [
-            // 'name' => 'required|min:5|max:255'
+            'code' => 'required|numeric',
+            'description' => 'required|min:1|max:255',
         ];
     }
 

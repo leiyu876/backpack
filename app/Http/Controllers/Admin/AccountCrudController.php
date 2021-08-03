@@ -93,6 +93,51 @@ class AccountCrudController extends CrudController
          * - CRUD::field('price')->type('number');
          * - CRUD::addField(['name' => 'price', 'type' => 'number'])); 
          */
+
+        $this->crud->removeField('deal_indicator');
+
+        $this->crud->modifyField('sic_id', [
+            'label'     => "SIC Code",
+            'type'      => 'select',
+            'name'      => 'sic_id', 
+            'model'     => "App\Models\Sic", 
+            'attribute' => 'code', 
+            'options'   => (function ($query) {
+                return $query->orderBy('code', 'ASC')->get();
+            }), 
+        ]);
+
+        $this->crud->modifyField('owners', [
+            'name'  => 'owners',
+            'label' => 'Owners',
+            'type'  => 'repeatable',
+            'fields' => [
+                [
+                    'name'    => 'owner_name',
+                    'type'    => 'text',
+                    'label'   => 'Owner Name',
+                    'wrapper' => ['class' => 'form-group col-md-4'],
+                ],
+                [
+                    'name'    => 'title',
+                    'type'    => 'text',
+                    'label'   => 'Title',
+                    'wrapper' => ['class' => 'form-group col-md-4'],
+                ],
+                [
+                    'name'    => 'date_of_birth',
+                    'type'    => 'date_picker',
+                    'label'   => 'Date of Birth',
+                    'wrapper' => ['class' => 'form-group col-md-4'],
+                ],
+            ],
+
+            // optional
+            'new_item_label'  => 'Add Owner', // customize the text of the button
+            'init_rows' => 1, // number of empty rows to be initialized, by default 1
+            'min_rows' => 1, // minimum rows allowed, when reached the "delete" buttons will be hidden
+            // 'max_rows' => 2, // maximum rows allowed, when reached the "new item" button will be hidden
+        ]);
     }
 
     /**
@@ -104,5 +149,26 @@ class AccountCrudController extends CrudController
     protected function setupUpdateOperation()
     {
         $this->setupCreateOperation();
+    }
+
+    protected function setupShowOperation()
+    {
+        $this->crud->setFromDb();
+
+        $this->crud->modifyColumn('owners', [
+            'name'  => 'owners',
+            'type'     => 'closure',
+            'function' => function($acount) {
+                $owners = json_decode($acount->owners);
+                $v = '';
+                foreach ($owners as $owner) {
+                    $v = $v.'<p>'.$owner->title.' '.$owner->owner_name.', '.$owner->date_of_birth.'</p>';
+                }
+
+                return $v;
+            }
+        ]);
+
+        $this->crud->removeColumn('deal_indicator');
     }
 }
